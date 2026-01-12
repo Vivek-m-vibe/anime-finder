@@ -1,0 +1,129 @@
+:root {
+    --neon-pink: #ff00ff;
+    --neon-blue: #00f2ff;
+    --dark-bg: #05050a;
+    --glass-effect: rgba(255, 255, 255, 0.05);
+}
+
+body {
+    background-color: var(--dark-bg);
+    /* High-res Cyberpunk City Background */
+    background-image: linear-gradient(rgba(5, 5, 10, 0.7), rgba(5, 5, 10, 0.7)), 
+                      url('https://images.alphacoders.com/903/903719.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    color: white;
+    font-family: 'Rajdhani', sans-serif;
+    margin: 0;
+}
+
+/* Character Silhouettes effect */
+.silhouette-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://i.imgur.com/xyz123.png') center/contain no-repeat; /* Replace with a silhouette PNG if available */
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.main-wrapper {
+    position: relative;
+    z-index: 1;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 3.2rem;
+    text-shadow: 0 0 20px var(--neon-pink);
+    margin-bottom: 2rem;
+}
+
+h1 span { color: var(--neon-pink); }
+
+/* The Glass Box from your Image */
+.search-box {
+    background: var(--glass-effect);
+    padding: 40px;
+    border-radius: 10px;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: inline-block;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+}
+
+input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid var(--neon-blue);
+    padding: 15px 25px;
+    width: 350px;
+    color: white;
+    border-radius: 5px;
+    font-size: 1.1rem;
+    outline: none;
+}
+
+button {
+    background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+    color: white;
+    border: none;
+    padding: 15px 35px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: 'Orbitron', sans-serif;
+    margin-left: 10px;
+    box-shadow: 0 0 15px var(--neon-blue);
+    transition: 0.3s;
+}
+
+button:hover { transform: scale(1.05); box-shadow: 0 0 25px var(--neon-pink); }
+
+/* Results Grid */
+.anime-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 30px;
+    max-width: 1300px;
+    margin: 50px auto;
+}
+
+.glass-card {
+    background: var(--glass-effect);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: 0.4s;
+}
+
+.glass-card.hidden { display: none; }
+
+.glass-card:hover {
+    border-color: var(--neon-pink);
+    transform: translateY(-8px);
+    box-shadow: 0 10px 30px rgba(255, 0, 255, 0.1);
+}
+
+.poster-container img {
+    width: 100%;
+    height: 350px;
+    object-fit: cover;
+}
+
+.card-content { padding: 20px; text-align: left; }
+.card-content h3 { color: var(--neon-blue); margin: 0; font-size: 1.1rem; }
+.card-content p { font-size: 0.85rem; opacity: 0.6; margin-top: 8px; }
+
+#loadMoreBtn {
+    margin-top: 30px;
+    background: transparent;
+    border: 2px solid var(--neon-pink);
+    color: var(--neon-pink);
+}

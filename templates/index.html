@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;600&display=swap" rel="stylesheet">
+    <title>Anime Discovery Engine</title>
+</head>
+<body>
+    <div class="silhouette-overlay"></div>
+
+    <div class="main-wrapper">
+        <header class="hero-section">
+            <div class="search-container">
+                <h1>YOO. <span>Find Your Next Favourite</span></h1>
+                <form action="/recommend" method="POST" class="search-box">
+                    <div class="input-group">
+                        <input type="text" name="anime_name" placeholder="Enter an anime you love..." required>
+                        <button type="submit">Get Recommendations</button>
+                    </div>
+                </form>
+            </div>
+        </header>
+
+        {% if suggestions %}
+        <main class="results-container">
+            <h2 class="results-header">22: Because you liked <span>{{ original }}</span>:</h2>
+            <div class="anime-grid">
+                {% for anime in suggestions %}
+                <div class="glass-card {% if loop.index > 6 %}hidden{% endif %}">
+                    <div class="poster-container">
+                        <img src="{{ anime.image }}" onerror="this.src='https://via.placeholder.com/300x450?text=No+Poster'">
+                    </div>
+                    <div class="card-content">
+                        <h3>{{ anime.title }}</h3>
+                        <p>{{ anime.genres }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="load-more-container">
+                <button id="loadMoreBtn" onclick="showMore()">Load More</button>
+            </div>
+        </main>
+        {% endif %}
+    </div>
+
+    <script>
+        function showMore() {
+            const hiddenCards = document.querySelectorAll('.glass-card.hidden');
+            for (let i = 0; i < 6 && i < hiddenCards.length; i++) {
+                hiddenCards[i].classList.remove('hidden');
+            }
+            if (document.querySelectorAll('.glass-card.hidden').length === 0) {
+                document.getElementById('loadMoreBtn').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
