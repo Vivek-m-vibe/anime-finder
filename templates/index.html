@@ -8,33 +8,78 @@
     <title>Anime Discovery Engine</title>
 </head>
 <body>
-    <div class="silhouette-overlay"></div>
+    <div class="silhouette-overlay">
+        <div class="silhouette-left"></div>
+        <div class="silhouette-right"></div>
+    </div>
+    <!-- Scattered anime images background -->
+<div id="backgroundImages" class="background-images-container"></div>
 
     <div class="main-wrapper">
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
+            <span class="theme-icon">🌙</span>
+        </button>
+        
         <header class="hero-section">
             <div class="search-container">
-                <h1>YOO. <span>Find Your Next Favourite</span></h1>
-                <form action="/recommend" method="POST" class="search-box">
-                    <div class="input-group">
-                        <input type="text" name="anime_name" placeholder="Enter an anime you love..." required>
-                        <button type="submit">Get Recommendations</button>
-                    </div>
-                </form>
+                <h1>YOO. <span>Find Your Next Favorite Anime</span></h1>
+                <div class="search-wrapper">
+                    <form action="/recommend" method="POST" class="search-box" id="searchForm">
+                        <label for="animeInput" class="search-label">Search</label>
+                        <div class="input-group">
+                            <div class="autocomplete-wrapper">
+                                <div class="search-icon-wrapper">
+                                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="11" cy="11" r="8"></circle>
+                                        <path d="m21 21-4.35-4.35"></path>
+                                    </svg>
+                                </div>
+                                <input type="text" name="anime_name" id="animeInput" placeholder="Enter an anime you love..." required autocomplete="off">
+                                <div id="autocompleteDropdown" class="autocomplete-dropdown"></div>
+                            </div>
+                            <button type="submit" id="searchBtn">
+                                <span class="btn-text">Get Recommendations</span>
+                                <span class="loading-spinner" style="display: none;"></span>
+                            </button>
+                        </div>
+                    </form>
+                    {% if background_image %}
+                    <div class="anime-image-display" id="animeImageDisplay" style="background-image: url('{{ background_image }}');"></div>
+                    {% endif %}
+                </div>
             </div>
         </header>
+
+        {% if error %}
+        <div class="error-message">
+            <p>{{ error }}</p>
+        </div>
+        {% endif %}
 
         {% if suggestions %}
         <main class="results-container">
             <h2 class="results-header">22: Because you liked <span>{{ original }}</span>:</h2>
-            <div class="anime-grid">
+            <div class="anime-grid" id="animeGrid">
                 {% for anime in suggestions %}
-                <div class="glass-card {% if loop.index > 6 %}hidden{% endif %}">
+                <div class="glass-card {% if loop.index > 6 %}hidden{% endif %}" style="animation-delay: {{ (loop.index - 1) * 0.1 }}s;">
                     <div class="poster-container">
-                        <img src="{{ anime.image }}" onerror="this.src='https://via.placeholder.com/300x450?text=No+Poster'">
+                        <img src="{{ anime.image }}" alt="{{ anime.title }}" onerror="this.src='https://via.placeholder.com/300x450?text=No+Poster'">
+                        {% if anime.score %}
+                        <div class="rating-badge">
+                            <span class="rating-star">⭐</span>
+                            <span class="rating-value">{{ "%.1f"|format(anime.score) }}</span>
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="card-content">
                         <h3>{{ anime.title }}</h3>
-                        <p>{{ anime.genres }}</p>
+                        <div class="genre-tags">
+                            {% if anime.genres %}
+                                {% for genre in anime.genres.split(',')[:3] %}
+                                    <span class="genre-tag">{{ genre.strip() }}</span>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -48,15 +93,184 @@
     </div>
 
     <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        
+        body.classList.add(currentTheme + '-theme');
+        updateThemeIcon(currentTheme);
+        
+        themeToggle.addEventListener('click', () => {
+            const isDark = body.classList.contains('dark-theme');
+            body.classList.remove('dark-theme', 'light-theme');
+            const newTheme = isDark ? 'light' : 'dark';
+            body.classList.add(newTheme + '-theme');
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        });
+        
+        function updateThemeIcon(theme) {
+            themeToggle.querySelector('.theme-icon').textContent = theme === 'dark' ? '🌙' : '☀️';
+        }
+
+        // Autocomplete functionality
+        const animeInput = document.getElementById('animeInput');
+        const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+        let autocompleteTimeout;
+        let selectedIndex = -1;
+        let suggestions = [];
+
+        animeInput.addEventListener('input', (e) => {
+            clearTimeout(autocompleteTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length < 2) {
+                autocompleteDropdown.style.display = 'none';
+                return;
+            }
+            
+            autocompleteTimeout = setTimeout(() => {
+                fetch(`/autocomplete?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        suggestions = data;
+                        selectedIndex = -1;
+                        displaySuggestions(data);
+                    })
+                    .catch(err => console.error('Autocomplete error:', err));
+            }, 300);
+        });
+
+        function displaySuggestions(items) {
+            if (items.length === 0) {
+                autocompleteDropdown.style.display = 'none';
+                return;
+            }
+            
+            autocompleteDropdown.innerHTML = items.map((item, index) => 
+                `<div class="autocomplete-item ${index === selectedIndex ? 'selected' : ''}" data-index="${index}">${item}</div>`
+            ).join('');
+            autocompleteDropdown.style.display = 'block';
+        }
+
+        animeInput.addEventListener('keydown', (e) => {
+            if (autocompleteDropdown.style.display === 'none') return;
+            
+            const items = autocompleteDropdown.querySelectorAll('.autocomplete-item');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                updateSelection(items);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, -1);
+                updateSelection(items);
+            } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                e.preventDefault();
+                animeInput.value = suggestions[selectedIndex];
+                autocompleteDropdown.style.display = 'none';
+            } else if (e.key === 'Escape') {
+                autocompleteDropdown.style.display = 'none';
+            }
+        });
+
+        function updateSelection(items) {
+            items.forEach((item, index) => {
+                item.classList.toggle('selected', index === selectedIndex);
+            });
+        }
+
+        autocompleteDropdown.addEventListener('click', (e) => {
+            if (e.target.classList.contains('autocomplete-item')) {
+                const index = parseInt(e.target.dataset.index);
+                animeInput.value = suggestions[index];
+                autocompleteDropdown.style.display = 'none';
+                animeInput.focus();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.autocomplete-wrapper')) {
+                autocompleteDropdown.style.display = 'none';
+            }
+        });
+
+        // Loading spinner
+        const searchForm = document.getElementById('searchForm');
+        const searchBtn = document.getElementById('searchBtn');
+        const btnText = searchBtn.querySelector('.btn-text');
+        const loadingSpinner = searchBtn.querySelector('.loading-spinner');
+        
+        searchForm.addEventListener('submit', () => {
+            btnText.style.display = 'none';
+            loadingSpinner.style.display = 'inline-block';
+            searchBtn.disabled = true;
+        });
+
+        // Show more cards with animation
         function showMore() {
             const hiddenCards = document.querySelectorAll('.glass-card.hidden');
             for (let i = 0; i < 6 && i < hiddenCards.length; i++) {
                 hiddenCards[i].classList.remove('hidden');
+                hiddenCards[i].style.opacity = '0';
+                hiddenCards[i].style.animation = 'fadeInUp 0.5s ease forwards';
             }
             if (document.querySelectorAll('.glass-card.hidden').length === 0) {
                 document.getElementById('loadMoreBtn').style.display = 'none';
             }
         }
+        // Background scattered images functionality
+const backgroundContainer = document.getElementById('backgroundImages');
+
+function createScatteredImages(imageUrls) {
+    // Clear previous images
+    backgroundContainer.innerHTML = '';
+    
+    // Create scattered images from the first 20 recommendations
+    imageUrls.forEach((url, index) => {
+        const img = document.createElement('div');
+        img.className = 'scattered-image';
+        
+        // Random position
+        const randomX = Math.random() * 90;
+        const randomY = Math.random() * 80;
+        const randomRotation = Math.random() * 15 - 7.5;
+        const randomSize = 80 + Math.random() * 60; // 80px to 140px
+        const randomDelay = index * 0.1;
+        
+        img.style.backgroundImage = `url('${url}')`;
+        img.style.left = randomX + '%';
+        img.style.top = randomY + '%';
+        img.style.width = randomSize + 'px';
+        img.style.height = randomSize + 'px';
+        img.style.transform = `rotate(${randomRotation}deg)`;
+        img.style.animationDelay = randomDelay + 's';
+        
+        backgroundContainer.appendChild(img);
+    });
+}
+
+// Extract images from recommendations when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    const animeCards = document.querySelectorAll('.glass-card img');
+    if (animeCards.length > 0) {
+        const imageUrls = Array.from(animeCards).slice(0, 20).map(img => img.src);
+        createScatteredImages(imageUrls);
+    }
+});
+
+// Update background images when new recommendations are loaded
+const originalShowMore = window.showMore;
+window.showMore = function() {
+    originalShowMore();
+    const animeCards = document.querySelectorAll('.glass-card img');
+    if (animeCards.length > 0) {
+        const imageUrls = Array.from(animeCards).slice(0, 20).map(img => img.src);
+        createScatteredImages(imageUrls);
+    }
+};
     </script>
 </body>
 </html>
