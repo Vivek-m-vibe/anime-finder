@@ -12,7 +12,7 @@ df['genres'] = df['genres'].fillna('')
 # Initialize engine with limited features
 cv = CountVectorizer(max_features=1000) # Further saves memory
 count_matrix = cv.fit_transform(df['genres'])
-similarity = cosine_similarity(count_matrix)
+# Note: cosine_similarity is now computed on demand to save memory
 
 @app.route('/')
 def index():
@@ -30,7 +30,9 @@ def recommend():
             searched_anime_image = None
         else:
             searched_anime_image = str(searched_anime_image).strip()
-        distances = sorted(list(enumerate(similarity[idx])), reverse=True, key=lambda x: x[1])
+        target_vector = count_matrix[idx]
+        similarity_scores = cosine_similarity(target_vector, count_matrix).flatten()
+        distances = sorted(list(enumerate(similarity_scores)), reverse=True, key=lambda x: x[1])
         
         results = []
         for i in distances[1:19]: # Get 18 for your 'Load More' feature (6 initial + 6 + 6)
